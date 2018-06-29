@@ -8,15 +8,14 @@ PLUGINS_DIR = "Plugins"
 
 
 class Plugin(object):
-    def __init__(self, name, dirname, description=None, enabled=False):
+    def __init__(self, name, description=None, enabled=False):
         self.name = name
-        self.dirname = dirname
         self.description = description
         self.enabled = enabled
 
     def __str__(self):
-        return "Plugin(name=\"{}\", dirname=\"{}\", description=\"{}\", enabled={})"\
-            .format(self.name, self.dirname, self.description, self.enabled)
+        return "Plugin(name=\"{}\", description=\"{}\", enabled={})"\
+            .format(self.name, self.description, self.enabled)
 
 
 def get_plugin_info(path):
@@ -69,20 +68,19 @@ plugins = []
 for item in os.listdir(plugins_dir):
     item_path = os.path.join(plugins_dir, item)
     plugin_info = get_plugin_info(item_path)
-    if plugin_info:
-        plugin_info["dirname"] = item
-        plugin = Plugin(plugin_info["name"], plugin_info["dirname"], plugin_info.get("description"))
+    if plugin_info and plugin_info["name"] == item:
+        plugin = Plugin(plugin_info["name"], plugin_info.get("description"))
         plugins.append(plugin)
     del plugin_info
 
 
 for plugin in plugins:
-    print(plugin.dirname)
-    if plugin.dirname in config["plugins"].keys():
-        config["plugins"][plugin.dirname]["enabled"] = config["plugins"][plugin.dirname].get("enabled", False)
-        plugin.enabled = config["plugins"][plugin.dirname]["enabled"]
+    print(plugin.name)
+    if plugin.name in config["plugins"].keys():
+        config["plugins"][plugin.name]["enabled"] = config["plugins"][plugin.name].get("enabled", False)
+        plugin.enabled = config["plugins"][plugin.name]["enabled"]
     else:
-        config["plugins"][plugin.dirname] = {"enabled": False}
+        config["plugins"][plugin.name] = {"enabled": False}
 
 save_config(config)
 
