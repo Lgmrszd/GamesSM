@@ -20,7 +20,7 @@
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
-      <widget class="QListView" name="pluginsList">
+      <widget class="QListWidget" name="pluginsList">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
          <horstretch>0</horstretch>
@@ -57,7 +57,7 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
-           <widget class="QTableView" name="savedSlots"/>
+           <widget class="QTableWidget" name="savedSlots"/>
           </item>
           <item>
            <layout class="QVBoxLayout" name="verticalLayout">
@@ -85,7 +85,7 @@
            </layout>
           </item>
           <item>
-           <widget class="QListView" name="gameSlots"/>
+           <widget class="QListWidget" name="gameSlots"/>
           </item>
          </layout>
         </item>
