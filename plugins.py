@@ -2,24 +2,15 @@ import os
 import sys
 import json
 import importlib.util
-
+from models import Plugin
 
 PLUGINS_DIR = "Plugins"
+_plugins = []
 
-
-class Plugin(object):
-    def __init__(self, name, description=None, enabled=False):
-        self.name = name
-        self.description = description
-        self.enabled = enabled
-
-    def __str__(self):
-        return "Plugin(name=\"{}\", description=\"{}\", enabled={})"\
-            .format(self.name, self.description, self.enabled)
 
 
 def get_plugin_info(path):
-    if not os.path.isdir(item_path):
+    if not os.path.isdir(path):
         return None
     try:
         with open(os.path.join(path, "info.json"), "r") as f:
@@ -33,56 +24,51 @@ def get_plugin_info(path):
         return None
 
 
-def save_config(conf):
-    config_path = os.path.join(PLUGINS_DIR, "plugins.json")
-    with open(config_path, "w") as f:
-        json.dump(conf, f, indent=2)
 
 
-def read_config():
-    config_path = os.path.join(PLUGINS_DIR, "plugins.json")
-    if os.path.exists(os.path.join(PLUGINS_DIR, "plugins.json")):
-        try:
-            with open(config_path, "r") as f:
-                conf = json.load(f)
-        except json.JSONDecodeError:
-            conf = {"plugins": {}}
-            save_config(conf)
-        return conf
-    else:
-        conf = {"plugins": {}}
-        save_config(conf)
-        return conf
+def get_plugins_info():
+    plugins_dir = os.path.split(os.path.abspath(sys.argv[0]))[0]
+    plugins_dir = os.path.join(plugins_dir, PLUGINS_DIR)
+
+    if not os.path.exists(plugins_dir):
+        os.makedirs(plugins_dir)
+
+    plugins_info = {}
+
+    for item in os.listdir(plugins_dir):
+        item_path = os.path.join(plugins_dir, item)
+        plugin_info = get_plugin_info(item_path)
+        if plugin_info and plugin_info["name"] == item:
+            plugins_info[item] = plugin_info
+
+    return plugins_info
 
 
-config = read_config()
+def load_plugins():
+    # Get list of existing plugins located in directories
+    existing_plugins = get_plugins_info()
+    # Get iterable (peewee select) of known plugins (stored in db)
+    known_plugins = Plugin.select()
+    known_plugins_names = []
 
-plugins_dir = os.path.split(os.path.abspath(sys.argv[0]))[0]
-plugins_dir = os.path.join(plugins_dir, PLUGINS_DIR)
+    for known_plugin in known_plugins:
+        # Fill up list of known plugins names
+        known_plugins_names.append(known_plugin.name)
+        # Check if directory of known plugin exists and mark as broken if it's not
+        if known_plugin.name not in existing_plugins.keys():
+            known_plugin.broken = True
+        # store plugin
+        _plugins.append(known_plugin)
 
-if not os.path.exists(plugins_dir):
-    os.makedirs(plugins_dir)
-
-plugins = []
-
-for item in os.listdir(plugins_dir):
-    item_path = os.path.join(plugins_dir, item)
-    plugin_info = get_plugin_info(item_path)
-    if plugin_info and plugin_info["name"] == item:
-        plugin = Plugin(plugin_info["name"], plugin_info.get("description"))
-        plugins.append(plugin)
-    del plugin_info
-
-
-for plugin in plugins:
-    print(plugin.name)
-    if plugin.name in config["plugins"].keys():
-        config["plugins"][plugin.name]["enabled"] = config["plugins"][plugin.name].get("enabled", False)
-        plugin.enabled = config["plugins"][plugin.name]["enabled"]
-    else:
-        config["plugins"][plugin.name] = {"enabled": False}
-
-save_config(config)
+    for ex_pl_name in existing_plugins.keys():
+        # Check if new plugin found and store it if it is
+        if ex_pl_name not in known_plugins_names:
+            new_plugin = Plugin.create(
+                name=existing_plugins[ex_pl_name]["name"],
+                description=existing_plugins[ex_pl_name]["description"]
+            )
+            # store plugin
+            _plugins.append(new_plugin)
 
 
 # print(plugins_dirs)
