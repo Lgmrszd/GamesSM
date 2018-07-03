@@ -7,7 +7,8 @@ from gui import GSMMainWindow
 
 def main():
     plugins.load_plugins()
-    
+    plugins.import_plugins()
+
     app = QApplication(sys.argv)
     # qt_translator = QTranslator()
     # print(qt_translator.load("test"))

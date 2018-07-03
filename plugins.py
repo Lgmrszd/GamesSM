@@ -2,11 +2,24 @@ import os
 import sys
 import json
 import importlib.util
-from models import Plugin
+from db_connect import BaseModel
+import peewee as pw
 
 PLUGINS_DIR = "Plugins"
 _plugins = []
 
+plugins_dir = os.path.split(os.path.abspath(sys.argv[0]))[0]
+plugins_dir = os.path.join(plugins_dir, PLUGINS_DIR)
+
+class Plugin(BaseModel):
+    name = pw.CharField(max_length=50, primary_key=True)
+    description = pw.CharField()
+    enabled = pw.BooleanField(default=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.module = None
+        self.broken = False
 
 
 def get_plugin_info(path):
@@ -24,12 +37,7 @@ def get_plugin_info(path):
         return None
 
 
-
-
 def get_plugins_info():
-    plugins_dir = os.path.split(os.path.abspath(sys.argv[0]))[0]
-    plugins_dir = os.path.join(plugins_dir, PLUGINS_DIR)
-
     if not os.path.exists(plugins_dir):
         os.makedirs(plugins_dir)
 
@@ -71,10 +79,23 @@ def load_plugins():
             _plugins.append(new_plugin)
 
 
+def import_plugins():
+    for plugin in _plugins:
+        if plugin.enabled:
+            print(plugin.name)
+            plugin.module = import_plugin(plugin.name)
+
+
+def import_plugin(name):
+    module_spec = importlib.util.spec_from_file_location("main", os.path.join(plugins_dir, name, "main.py"))
+    module = importlib.util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(module)
+    return module
+
+
+def get_plugins_list():
+    return _plugins
+
 # print(plugins_dirs)
-# # m = importlib.import_module(os.path.join(plugins_dir, plugins_dirs[0], "main"))
-# module_spec = importlib.util.spec_from_file_location("main", os.path.join(plugins_dir, plugins_dirs[0], "main.py"))
-# module = importlib.util.module_from_spec(module_spec)
-# module_spec.loader.exec_module(module)
 # module.main()
 # print(module_spec)
