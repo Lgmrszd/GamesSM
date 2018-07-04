@@ -55,7 +55,7 @@
            </property>
            <layout class="QVBoxLayout" name="verticalLayout">
             <item>
-             <widget class="QLabel" name="label">
+             <widget class="QLabel" name="pluginLabel">
               <property name="text">
                <string>TextLabel</string>
               </property>
@@ -87,7 +87,7 @@
      <x>0</x>
      <y>0</y>
      <width>706</width>
-     <height>30</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
