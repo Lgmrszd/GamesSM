@@ -2,7 +2,7 @@ import os
 import sys
 import json
 import importlib.util
-from db_connect import BaseModel
+from db_connect import BaseModel, MemoryBaseModel
 import peewee as pw
 
 PLUGINS_DIR = "Plugins"
@@ -11,15 +11,46 @@ _plugins = []
 plugins_dir = os.path.split(os.path.abspath(sys.argv[0]))[0]
 plugins_dir = os.path.join(plugins_dir, PLUGINS_DIR)
 
-class Plugin(BaseModel):
+
+# Plugin class to store in database
+class DbPlugin(BaseModel):
+    name = pw.CharField(max_length=50, primary_key=True)
+    enabled = pw.BooleanField(default=False)
+
+
+# Plugin class to work while app running
+class Plugin(MemoryBaseModel):
     name = pw.CharField(max_length=50, primary_key=True)
     description = pw.CharField()
     enabled = pw.BooleanField(default=False)
+    broken = pw.BooleanField(default=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.module = None
-        self.broken = False
+        # Save plugin preferences to local db if it's new plugin
+        self.db_plugin, created = DbPlugin.get_or_create(name=self.name)
+        if kwargs.get("broken", False):
+            self.db_plugin.enabled = False
+
+        if not created:
+            self.enabled = self.db_plugin.enabled
+            self.save()
+
+
+    def save(self, force_insert=False, only=None):
+        super().save(force_insert=force_insert, only=only)
+        # Save plugin preferences to local db
+        self.db_plugin.enabled = self.enabled
+        self.db_plugin.save()
+
+    def set_enabled(self):
+        self.enabled = True
+        self.save()
+
+    def set_disabled(self):
+        self.enabled = False
+        self.save()
 
 
 def get_plugin_info(path):
@@ -53,36 +84,32 @@ def get_plugins_info():
 
 
 def load_plugins():
+    # Create plugins table
+    Plugin.create_table()
     # Get list of existing plugins located in directories
     existing_plugins = get_plugins_info()
-    # Get iterable (peewee select) of known plugins (stored in db)
-    known_plugins = Plugin.select()
-    known_plugins_names = []
-
-    for known_plugin in known_plugins:
-        # Fill up list of known plugins names
-        known_plugins_names.append(known_plugin.name)
-        # Check if directory of known plugin exists and mark as broken if it's not
-        if known_plugin.name not in existing_plugins.keys():
-            known_plugin.broken = True
-        # store plugin
-        _plugins.append(known_plugin)
-
+    # Add existing plugins to memory
     for ex_pl_name in existing_plugins.keys():
-        # Check if new plugin found and store it if it is
-        if ex_pl_name not in known_plugins_names:
-            new_plugin = Plugin.create(
-                name=existing_plugins[ex_pl_name]["name"],
-                description=existing_plugins[ex_pl_name]["description"]
-            )
-            # store plugin
-            _plugins.append(new_plugin)
+        ex_pl = existing_plugins[ex_pl_name]
+        Plugin.create(
+            name=ex_pl_name,
+            description=ex_pl["description"]
+        )
+    # Find broken plugins
+    db_pl_names = set([i.name for i in DbPlugin.select(DbPlugin.name)])
+    missed_pl_names = list(db_pl_names - set(existing_plugins.keys()))
+    for missed_pl_name in missed_pl_names:
+        Plugin.create(
+            name=missed_pl_name,
+            description="",
+            enabled=False,
+            broken=True
+        )
 
 
 def import_plugins():
     for plugin in _plugins:
         if plugin.enabled:
-            print(plugin.name)
             plugin.module = import_plugin(plugin.name)
 
 
@@ -94,7 +121,11 @@ def import_plugin(name):
 
 
 def get_plugins_list():
-    return _plugins
+    return list(Plugin.select())
+
+
+def get_enabled_plugins_list():
+    return list(Plugin.select().where(Plugin.enabled == True))
 
 # print(plugins_dirs)
 # module.main()
