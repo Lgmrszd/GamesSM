@@ -1,7 +1,8 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QListWidget, QTableWidget, QTableWidgetItem, QPushButton, QAction, QCheckBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QListWidget, QListWidgetItem, QTableWidget, QTableWidgetItem, QPushButton, QAction, QLabel
+from PyQt5.QtGui import QColor, QBrush
 from PyQt5 import uic
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QObject, Qt
 import plugins
 
 
@@ -19,6 +20,16 @@ class PluginSettingsRow(QObject):
         self.plugin = plugin
         self.name_widg = self.PluginWidgetItem(self, self.plugin.name)
         self.enab_widg = self.PluginWidgetItem(self, self._str_enabled())
+        if self.plugin.broken:
+            self.mark_broken()
+
+    def mark_broken(self):
+        self.name_widg.setBackground(QColor(255, 100, 100))
+        self.enab_widg.setBackground(QColor(255, 100, 100))
+
+    def mark_normal(self):
+        self.name_widg.setBackground(QBrush())
+        self.enab_widg.setBackground(QBrush())
 
     def _str_enabled(self):
         if self.plugin.enabled:
@@ -42,6 +53,8 @@ class SettingsWindow(QMainWindow):
 
         self.current_plugin = None  # type: plugins.Plugin
 
+        self.pluginLabel: QLabel = self.findChild(QLabel, "pluginLabel")
+
         self.toggleButton: QPushButton = self.findChild(QPushButton, "toggleButton")
         self.toggleButton.setDisabled(True)
         self.toggleButton.clicked.connect(self.on_toggle_button_clicked)
@@ -55,25 +68,37 @@ class SettingsWindow(QMainWindow):
         self.pluginsTable.itemClicked.connect(self.on_item_selected)
         self.load_plugins()
 
-    def on_toggle_button_clicked(self, _):
-        print(self.current_plugin)
-        if self.current_plugin.enabled:
-            self.current_plugin.enabled = False
-            self.current_plugin.save()
-            self.toggleButton.setText(self.tr("Enable"))
-        else:
-            self.current_plugin.enabled = True
-            self.current_plugin.save()
+    def update_label(self):
+        text = ("Name: {}\n"
+                "Description: {}")
+        text = text.format(self.current_plugin.name, self.current_plugin.description)
+        if self.current_plugin.broken:
+            text = "Name: {}\n".format(self.current_plugin.name)
+            text = text + "This plugin is broken; please, reinstall this plugin"
+        self.pluginLabel.setText(text)
+
+    def update_button(self):
+        if self.current_plugin.broken:
+            self.toggleButton.setDisabled(True)
+            self.toggleButton.setText(self.tr("Select plugin..."))
+        elif self.current_plugin.enabled:
+            self.toggleButton.setDisabled(False)
             self.toggleButton.setText(self.tr("Disable"))
+        else:
+            self.toggleButton.setDisabled(False)
+            self.toggleButton.setText(self.tr("Enable"))
+
+    def on_toggle_button_clicked(self, _):
+        self.current_plugin.enabled = not self.current_plugin.enabled
+        self.current_plugin.save()
+        self.update_button()
         self.pluginsTable.currentItem().plugin_row.update_status()
 
     def on_item_selected(self, item: PluginSettingsRow.PluginWidgetItem):
         self.toggleButton.setDisabled(False)
         self.current_plugin = item.plugin
-        if self.current_plugin.enabled:
-            self.toggleButton.setText(self.tr("Disable"))
-        else:
-            self.toggleButton.setText(self.tr("Enable"))
+        self.update_button()
+        self.update_label()
 
     def load_plugins(self):
         plugins_rows = []
@@ -101,6 +126,16 @@ class GSMMainWindow(QMainWindow):
 
         self.actionSettings: QAction = self.findChild(QAction, "actionSettings")
         self.actionSettings.triggered.connect(self.settingsWindow.show)
+
+        self.load_plugins()
+
+    def load_plugins(self):
+        # self.pluginsList.insertItem()
+        enabled_plugins = plugins.get_enabled_plugins_list()
+
+        for enabled_plugin in enabled_plugins:
+            item = QListWidgetItem(enabled_plugin.name)
+            self.pluginsList.addItem(item)
 
     def closeEvent(self, QCloseEvent):
         QApplication.closeAllWindows()
