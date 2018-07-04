@@ -69,8 +69,8 @@ class SettingsWindow(QMainWindow):
         self.load_plugins()
 
     def update_label(self):
-        text = ("Name: {}\n"
-                "Description: {}")
+        text = ("<b>Name</b>: {}<br>"
+                "<b>Description</b>: {}")
         text = text.format(self.current_plugin.name, self.current_plugin.description)
         if self.current_plugin.broken:
             text = "Name: {}\n".format(self.current_plugin.name)
@@ -114,6 +114,8 @@ class GSMMainWindow(QMainWindow):
         super().__init__(*args, **kwargs)
         uic.loadUi("ui/MainWindow.ui", self)
 
+        self.current_plugin: plugins.Plugin = None
+
         self.settingsWindow = SettingsWindow()
 
         self.copyButton: QPushButton = self.findChild(QPushButton, "copyButton")
@@ -121,13 +123,28 @@ class GSMMainWindow(QMainWindow):
         self.replaceButton: QPushButton = self.findChild(QPushButton, "replaceButton")
 
         self.pluginsList: QListWidget = self.findChild(QListWidget, "pluginsList")
+        self.pluginsList.itemClicked.connect(self.on_plugin_select)
+
         self.savedSlots: QTableWidget = self.findChild(QTableWidget, "savedSlots")
         self.gameSlots: QListWidget = self.findChild(QListWidget, "gameSlots")
+
+        self.pluginLabel: QLabel = self.findChild(QLabel, "pluginLabel")
 
         self.actionSettings: QAction = self.findChild(QAction, "actionSettings")
         self.actionSettings.triggered.connect(self.settingsWindow.show)
 
         self.load_plugins()
+
+    def update_label(self):
+        text = ("<b>Name</b>: {}<br>"
+                "<b>Description</b>: {}")
+        text = text.format(self.current_plugin.name, self.current_plugin.description)
+        self.pluginLabel.setText(text)
+        print(self.current_plugin.get_module().MAX_SLOTS_NUMBER)
+
+    def on_plugin_select(self, item):
+        self.current_plugin = plugins.Plugin.get_by_id(item.text())
+        self.update_label()
 
     def load_plugins(self):
         # self.pluginsList.insertItem()
