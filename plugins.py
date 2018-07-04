@@ -6,10 +6,11 @@ from db_connect import BaseModel, MemoryBaseModel
 import peewee as pw
 
 PLUGINS_DIR = "Plugins"
-_plugins = []
 
 plugins_dir = os.path.split(os.path.abspath(sys.argv[0]))[0]
 plugins_dir = os.path.join(plugins_dir, PLUGINS_DIR)
+
+modules = {}
 
 
 # Plugin class to store in database
@@ -27,7 +28,6 @@ class Plugin(MemoryBaseModel):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.module = None
         # Save plugin preferences to local db if it's new plugin
         self.db_plugin, created = DbPlugin.get_or_create(name=self.name)
         if kwargs.get("broken", False):
@@ -36,6 +36,9 @@ class Plugin(MemoryBaseModel):
         if not created:
             self.enabled = self.db_plugin.enabled
             self.save()
+
+    def get_module(self):
+        return modules.get(self.name)
 
 
     def save(self, force_insert=False, only=None):
@@ -51,6 +54,12 @@ class Plugin(MemoryBaseModel):
     def set_disabled(self):
         self.enabled = False
         self.save()
+
+
+class PluginModule(object):
+    def __init__(self):
+        self.FIXED_SLOTS = True
+        self.MAX_SLOTS_NUMBER = 0
 
 
 def get_plugin_info(path):
@@ -108,12 +117,16 @@ def load_plugins():
 
 
 def import_plugins():
-    for plugin in _plugins:
+    for plugin in Plugin.select():
         if plugin.enabled:
-            plugin.module = import_plugin(plugin.name)
+            module = import_plugin_module(plugin.name)
+            try:
+                modules[plugin.name] = module.PluginMainModule()
+            except Exception as ex:
+                print(ex)
 
 
-def import_plugin(name):
+def import_plugin_module(name):
     module_spec = importlib.util.spec_from_file_location("main", os.path.join(plugins_dir, name, "main.py"))
     module = importlib.util.module_from_spec(module_spec)
     module_spec.loader.exec_module(module)
