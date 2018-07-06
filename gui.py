@@ -132,7 +132,7 @@ class GSMMainWindow(PyQt5.QtWidgets.QMainWindow):
         self.replaceButton: PyQt5.QtWidgets.QPushButton = self.findChild(PyQt5.QtWidgets.QPushButton, "replaceButton")
 
         self.pluginSettingsButton: PyQt5.QtWidgets.QPushButton = self.findChild(PyQt5.QtWidgets.QPushButton, "pluginSettingsButton")
-        self.pluginSettingsButton.clicked.connect(self.on_pluigin_settings_button_clicked)
+        self.pluginSettingsButton.clicked.connect(self.on_plugin_settings_button_clicked)
 
         self.pluginsList: PyQt5.QtWidgets.QListWidget = self.findChild(PyQt5.QtWidgets.QListWidget, "pluginsList")
         self.pluginsList.itemClicked.connect(self.on_plugin_select)
@@ -145,11 +145,13 @@ class GSMMainWindow(PyQt5.QtWidgets.QMainWindow):
         self.actionSettings: PyQt5.QtWidgets.QAction = self.findChild(PyQt5.QtWidgets.QAction, "actionSettings")
         self.actionSettings.triggered.connect(self.settingsWindow.show)
 
+        self.actionAbout: PyQt5.QtWidgets.QAction = self.findChild(PyQt5.QtWidgets.QAction, "actionAbout")
+        self.actionAbout.triggered.connect(self.show_about_dialog)
+
         self.load_plugins()
 
-    def on_pluigin_settings_button_clicked(self):
-        show_about_dialog(self)
-        # self.settingsWindow.show()
+    def on_plugin_settings_button_clicked(self):
+        self.settingsWindow.show()
         tabWidget: PyQt5.QtWidgets.QTabWidget = self.settingsWindow.findChild(PyQt5.QtWidgets.QTabWidget, "settingsTabWidget")
         pluginsTab = self.settingsWindow.findChild(PyQt5.QtWidgets.QWidget, "pluginsTab")
         if tabWidget and pluginsTab:
@@ -177,6 +179,7 @@ class GSMMainWindow(PyQt5.QtWidgets.QMainWindow):
     def closeEvent(self, QCloseEvent):
         PyQt5.QtWidgets.QApplication.closeAllWindows()
 
-
-def show_about_dialog(parent):
-    PyQt5.QtWidgets.QMessageBox.about(parent, "A", "B")
+    def show_about_dialog(self):
+        title = self.tr("About GamesSM")
+        body = self.tr("IDK what put here lmao xddddd")
+        PyQt5.QtWidgets.QMessageBox.about(self, title, body)
