@@ -27,6 +27,10 @@
 .idea/**/dictionaries
 .idea/**/shelf
 
+.idea/GamesSM.iml
+.idea/misc.xml
+
+
 # Sensitive or high-churn files
 .idea/**/dataSources/
 .idea/**/dataSources.ids
