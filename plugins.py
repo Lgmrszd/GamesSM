@@ -93,6 +93,8 @@ def get_plugins_info():
 
 
 def load_plugins():
+    # Drop table if restart
+    Plugin.drop_table()
     # Create plugins table
     Plugin.create_table()
     # Get list of existing plugins located in directories
