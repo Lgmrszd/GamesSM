@@ -2,7 +2,7 @@ import plugins
 import sys
 from PyQt5.QtWidgets import QApplication
 # from PyQt5.QtCore import QTranslator, QLocale
-from gui import GSMMainWindow
+from gui import GSMMainWindow, EXIT_CODE_RESTART
 
 
 def main():
@@ -17,8 +17,11 @@ def main():
 
     w = GSMMainWindow()
     w.show()
-    sys.exit(app.exec_())
+    return app.exec_()
 
 
 if __name__ == '__main__':
-    main()
+    current_exit_code = EXIT_CODE_RESTART
+    while current_exit_code == EXIT_CODE_RESTART:
+        current_exit_code = main()
+    sys.exit(current_exit_code)
