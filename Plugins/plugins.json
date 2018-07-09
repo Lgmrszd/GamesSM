@@ -1,7 +1,0 @@
-{
-  "plugins": {
-    "test": {
-      "enabled": false
-    }
-  }
-}
