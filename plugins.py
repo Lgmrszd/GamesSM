@@ -40,7 +40,6 @@ class Plugin(MemoryBaseModel):
     def get_module(self):
         return modules.get(self.name)
 
-
     def save(self, force_insert=False, only=None):
         super().save(force_insert=force_insert, only=only)
         # Save plugin preferences to local db
@@ -54,12 +53,6 @@ class Plugin(MemoryBaseModel):
     def set_disabled(self):
         self.enabled = False
         self.save()
-
-
-class PluginModule(object):
-    def __init__(self):
-        self.FIXED_SLOTS = True
-        self.MAX_SLOTS_NUMBER = 0
 
 
 def get_plugin_info(path):
@@ -123,9 +116,12 @@ def import_plugins():
         if plugin.enabled:
             module = import_plugin_module(plugin.name)
             try:
-                modules[plugin.name] = module.PluginMainModule()
+                modules[plugin.name] = module.PluginModule()
+                print(modules[plugin.name])
             except Exception as ex:
                 print(ex)
+                plugin.enabled = False
+                plugin.save()
 
 
 def import_plugin_module(name):
@@ -141,7 +137,3 @@ def get_plugins_list():
 
 def get_enabled_plugins_list():
     return list(Plugin.select().where(Plugin.enabled == True))
-
-# print(plugins_dirs)
-# module.main()
-# print(module_spec)

@@ -1,8 +1,8 @@
-from plugins import PluginModule
+from plugins_connector import PluginModuleSample
 
 
 # TODO: more appropriate name
-class PluginMainModule(PluginModule):
+class PluginModule(PluginModuleSample):
     def __init__(self):
         super().__init__()
         self.FIXED_SLOTS = True
