@@ -1,14 +1,15 @@
-import os
 import sys
 import json
 import importlib.util
+from pathlib import Path
 from db_connect import BaseModel, MemoryBaseModel
 import peewee as pw
 
 PLUGINS_DIR = "Plugins"
 
-plugins_dir = os.path.split(os.path.abspath(sys.argv[0]))[0]
-plugins_dir = os.path.join(plugins_dir, PLUGINS_DIR)
+plugins_path = Path(sys.argv[0]).resolve()
+plugins_path = plugins_path.parent.joinpath(Path(PLUGINS_DIR))
+plugins_path = Path(plugins_path)
 
 modules = {}
 
@@ -55,13 +56,16 @@ class Plugin(MemoryBaseModel):
         self.save()
 
 
-def get_plugin_info(path):
-    if not os.path.isdir(path):
+def get_plugin_info(pl_path: Path):
+    if not pl_path.is_dir():
+        return None
+    info_path = pl_path.joinpath("info.json")
+    if not info_path.is_file():
         return None
     try:
-        with open(os.path.join(path, "info.json"), "r") as f:
+        with info_path.open() as f:
             info = json.load(f)
-            if "name" in info.keys():
+            if isinstance(info, dict) and info.get("name") == pl_path.name:
                 return info
             else:
                 return None
@@ -71,16 +75,13 @@ def get_plugin_info(path):
 
 
 def get_plugins_info():
-    if not os.path.exists(plugins_dir):
-        os.makedirs(plugins_dir)
-
+    if not plugins_path.exists():
+        plugins_path.mkdir()
     plugins_info = {}
-
-    for item in os.listdir(plugins_dir):
-        item_path = os.path.join(plugins_dir, item)
-        plugin_info = get_plugin_info(item_path)
-        if plugin_info and plugin_info["name"] == item:
-            plugins_info[item] = plugin_info
+    for pl_path in plugins_path.iterdir():
+        pl_info = get_plugin_info(pl_path)
+        if pl_info:
+            plugins_info[pl_info["name"]] = pl_info
 
     return plugins_info
 
@@ -125,7 +126,7 @@ def import_plugins():
 
 
 def import_plugin_module(name):
-    module_spec = importlib.util.spec_from_file_location("main", os.path.join(plugins_dir, name, "main.py"))
+    module_spec = importlib.util.spec_from_file_location("main", plugins_path.joinpath(name, "main.py"))
     module = importlib.util.module_from_spec(module_spec)
     module_spec.loader.exec_module(module)
     return module
