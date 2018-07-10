@@ -10,16 +10,14 @@ class ConfigEntry(BaseModel):
     value = pw.CharField(max_length=100)
 
 
-def find_steam_paths():
+def find_steamapps_paths():
+    paths = []
     system = platform.system()
     if system == "Windows":
-        steam_path = Path("C:\Program Files (x86)\Steam")
-        if steam_path.exists():
-            return steam_path
-        else:
-            return None
-    else:
-        return None
+        steam_path = Path("C:\Program Files (x86)\Steam\steamapps")
+        if steam_path.exists() and steam_path.is_dir():
+            paths.append(steam_path)
+    return paths
 
 
 def create_config():

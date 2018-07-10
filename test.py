@@ -1,2 +1,2 @@
 import config
-print(config.find_steam_paths())
+print(config.find_steamapps_paths())
