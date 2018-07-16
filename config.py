@@ -17,6 +17,11 @@ def find_steamapps_paths():
         steam_path = Path("C:\Program Files (x86)\Steam\steamapps")
         if steam_path.exists() and steam_path.is_dir():
             paths.append(steam_path)
+    elif system == "Linux":
+        home = Path.home()
+        steam_path = home.joinpath(Path(".local/share/Steam/steamapps")).resolve()
+        if steam_path.exists() and steam_path.is_dir():
+            paths.append(steam_path)
     return paths
 
 
